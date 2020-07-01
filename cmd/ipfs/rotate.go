@@ -91,8 +91,8 @@ func doRotate(out io.Writer, repoRoot string, algorithm string, nBitsForKeypair 
 	}
 	keystore := repo.Keystore()
 	name := fmt.Sprintf("rotation %s -> %s on %s",
-		cfg.Identity.PeerID,
-		identity.PeerID,
+		shorten(cfg.Identity.PrivKey),
+		shorten(identity.PrivKey),
 		time.Now().Format(time.RFC822),
 	)
 	if err := keystore.Put(name, oldPrivKey); err != nil {
@@ -107,4 +107,11 @@ func doRotate(out io.Writer, repoRoot string, algorithm string, nBitsForKeypair 
 		return fmt.Errorf("saving new key to config (%v)", err)
 	}
 	return nil
+}
+
+func shorten(s string) string {
+	if len(s) > 10 {
+		s = s[:10]
+	}
+	return s
 }

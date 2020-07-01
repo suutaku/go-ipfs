@@ -11,8 +11,6 @@ import (
 	oldcmds "github.com/ipfs/go-ipfs/commands"
 	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/ipfs/interface-go-ipfs-core/options"
-	ci "github.com/libp2p/go-libp2p-core/crypto"
-	b58 "github.com/mr-tron/base58/base58"
 )
 
 const (
@@ -67,14 +65,14 @@ func doRotate(out io.Writer, repoRoot string, algorithm string, nBitsForKeypair 
 	// Open repo
 	repo, err := fsrepo.Open(repoRoot)
 	if err != nil {
-		return err
+		return fmt.Errorf("opening repo (%v)", err)
 	}
 	defer repo.Close()
 
 	// Read config file from repo
 	cfg, err := repo.Config()
 	if err != nil {
-		return err
+		return fmt.Errorf("reading config from repo (%v)", err)
 	}
 
 	// Generate new identity
@@ -83,48 +81,30 @@ func doRotate(out io.Writer, repoRoot string, algorithm string, nBitsForKeypair 
 		options.Key.Type(algorithm),
 	})
 	if err != nil {
-		return err
-	}
-	newPrivKey, err := identity.DecodePrivateKey("") //XXX
-	if err != nil {
-		return err
+		return fmt.Errorf("creating identity (%v)", err)
 	}
 
 	// Save old identity to keystore
 	oldPrivKey, err := cfg.Identity.DecodePrivateKey("") //XXX
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding old private key (%v)", err)
 	}
 	keystore := repo.Keystore()
-	oldKey, err := pubKeyPrefix(oldPrivKey.GetPublic())
-	if err != nil {
-		return err
-	}
-	newKey, err := pubKeyPrefix(newPrivKey.GetPublic())
-	if err != nil {
-		return err
-	}
-	name := fmt.Sprintf("IdentityRotation-%s-from-%s-to-%s-at-%s",
+	name := fmt.Sprintf("rotation %s -> %s on %s",
 		cfg.Identity.PeerID,
-		oldKey,
-		newKey,
+		identity.PeerID,
 		time.Now().Format(time.RFC822),
 	)
 	if err := keystore.Put(name, oldPrivKey); err != nil {
-		return err
+		return fmt.Errorf("saving old key in keystore (%v)", err)
 	}
 
 	// Update identity
 	cfg.Identity = identity
 
 	// Write config file to repo
-	return repo.SetConfig(cfg)
-}
-
-func pubKeyPrefix(k ci.PubKey) (string, error) {
-	r, err := k.Raw()
-	if err != nil {
-		return "", err
+	if err = repo.SetConfig(cfg); err != nil {
+		return fmt.Errorf("saving new key to config (%v)", err)
 	}
-	return b58.Encode(r), nil
+	return nil
 }

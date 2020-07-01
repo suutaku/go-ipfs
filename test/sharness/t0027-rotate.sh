@@ -16,7 +16,7 @@ test_launch_ipfs_daemon
 test_kill_ipfs_daemon
 
 test_expect_success "rotating keys" '
-ipfs rotate
+ipfs rotate --oldkey=oldkey
 '
 
 test_expect_success "Compare second ID and key to first" '
@@ -38,9 +38,9 @@ test_launch_ipfs_daemon
 
 test_expect_success "publish name with new and old keys" '
 echo "hello world" > msg &&
-ipfs add msg > msg_path &&
-cat msg_path | cut -d " " -f2 > msg_hash &&
-./ipfs name publish --key=self `cat msg_hash`
+ipfs add msg | cut -d " " -f2 | tr -d "\n" > msg_hash &&
+ipfs name publish --allow-offline --key=self $(cat msg_hash) &&
+ipfs name publish --allow-offline --key=oldkey $(cat msg_hash)
 '
 
 test_kill_ipfs_daemon

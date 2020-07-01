@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	cmds "github.com/ipfs/go-ipfs-cmds"
 	config "github.com/ipfs/go-ipfs-config"
@@ -16,6 +15,7 @@ import (
 const (
 	algorithmDefault    = options.Ed25519Key
 	algorithmOptionName = "algorithm"
+	oldKeyOptionName    = "oldkey"
 )
 
 var rotateCmd = &cmds.Command{
@@ -34,6 +34,7 @@ environment variable:
 	},
 	Arguments: []cmds.Argument{},
 	Options: []cmds.Option{
+		cmds.StringOption(oldKeyOptionName, "o", "Keystore name for the old/rotated-out key."),
 		cmds.StringOption(algorithmOptionName, "a", "Cryptographic algorithm to use for key generation.").WithDefault(algorithmDefault),
 		cmds.IntOption(bitsOptionName, "b", "Number of bits to use in the generated RSA private key.").WithDefault(nBitsForKeypairDefault),
 	},
@@ -57,11 +58,15 @@ environment variable:
 		cctx := env.(*oldcmds.Context)
 		nBitsForKeypair, _ := req.Options[bitsOptionName].(int)
 		algorithm, _ := req.Options[algorithmOptionName].(string)
-		return doRotate(os.Stdout, cctx.ConfigRoot, algorithm, nBitsForKeypair)
+		oldKey, ok := req.Options[oldKeyOptionName].(string)
+		if !ok {
+			return fmt.Errorf("keystore name for backing up old key must be provided")
+		}
+		return doRotate(os.Stdout, cctx.ConfigRoot, oldKey, algorithm, nBitsForKeypair)
 	},
 }
 
-func doRotate(out io.Writer, repoRoot string, algorithm string, nBitsForKeypair int) error {
+func doRotate(out io.Writer, repoRoot string, oldKey string, algorithm string, nBitsForKeypair int) error {
 	// Open repo
 	repo, err := fsrepo.Open(repoRoot)
 	if err != nil {
@@ -85,17 +90,12 @@ func doRotate(out io.Writer, repoRoot string, algorithm string, nBitsForKeypair 
 	}
 
 	// Save old identity to keystore
-	oldPrivKey, err := cfg.Identity.DecodePrivateKey("") //XXX
+	oldPrivKey, err := cfg.Identity.DecodePrivateKey("")
 	if err != nil {
 		return fmt.Errorf("decoding old private key (%v)", err)
 	}
 	keystore := repo.Keystore()
-	name := fmt.Sprintf("rotation %s -> %s on %s",
-		shorten(cfg.Identity.PeerID),
-		shorten(identity.PeerID),
-		time.Now().Format(time.RFC822),
-	)
-	if err := keystore.Put(name, oldPrivKey); err != nil {
+	if err := keystore.Put(oldKey, oldPrivKey); err != nil {
 		return fmt.Errorf("saving old key in keystore (%v)", err)
 	}
 
@@ -107,11 +107,4 @@ func doRotate(out io.Writer, repoRoot string, algorithm string, nBitsForKeypair 
 		return fmt.Errorf("saving new key to config (%v)", err)
 	}
 	return nil
-}
-
-func shorten(s string) string {
-	if len(s) > 10 {
-		s = s[:10]
-	}
-	return s
 }

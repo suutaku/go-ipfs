@@ -81,9 +81,9 @@ test_expect_success "ipfs peer id looks good" '
 
 test_expect_success "ipfs init output looks good" '
   STARTFILE="ipfs cat /ipfs/$HASH_WELCOME_DOCS/readme" &&
-  echo "initializing IPFS node at $IPFS_PATH" >expected &&
-  echo "generating $BITS-bit RSA keypair...done" >>expected &&
+  echo "generating ED25519 keypair...done" >expected &&
   echo "peer identity: $PEERID" >>expected &&
+  echo "initializing IPFS node at $IPFS_PATH" >>expected &&
   echo "to get started, enter:" >>expected &&
   printf "\\n\\t$STARTFILE\\n\\n" >>expected &&
   test_cmp expected actual_init
@@ -108,9 +108,9 @@ test_expect_success "ipfs peer id looks good" '
 '
 
 test_expect_success "'ipfs init --empty-repo' output looks good" '
-  echo "initializing IPFS node at $IPFS_PATH" >expected &&
-  echo "generating $BITS-bit RSA keypair...done" >>expected &&
+  echo "generating ED25519 keypair...done" >expected &&
   echo "peer identity: $PEERID" >>expected &&
+  echo "initializing IPFS node at $IPFS_PATH" >>expected &&
   test_cmp expected actual_init
 '
 

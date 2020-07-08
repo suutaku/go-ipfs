@@ -108,12 +108,13 @@ test_expect_success "Add the test directory" '
 '
 
 test_expect_success "Publish test text file to IPNS" '
-  PEERID=$(ipfs id --format="<id>")
+  # PEERID=$(ipfs id --format="<id>")
+  PEERID=$(ipfs key gen --type=rsa --size=2048 test_key | head -n1 | tr -d "\n")
   IPNS_IDv0=$(echo "$PEERID" | ipfs cid format -v 0)
   IPNS_IDv1=$(echo "$PEERID" | ipfs cid format -v 1 --codec libp2p-key -b base32)
   IPNS_IDv1_DAGPB=$(echo "$IPNS_IDv0" | ipfs cid format -v 1 -b base32)
   test_check_peerid "${PEERID}" &&
-  ipfs name publish --allow-offline -Q "/ipfs/$CIDv1" > name_publish_out &&
+  ipfs name publish --key test_key --allow-offline -Q "/ipfs/$CIDv1" > name_publish_out &&
   ipfs name resolve "$PEERID"  > output &&
   printf "/ipfs/%s\n" "$CIDv1" > expected2 &&
   test_cmp expected2 output

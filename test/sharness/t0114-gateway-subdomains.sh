@@ -94,6 +94,7 @@ test_expect_success "Add test text file" '
   CIDv1=$(echo $CID_VAL | ipfs add --cid-version 1 -Q)
   CIDv0=$(echo $CID_VAL | ipfs add --cid-version 0 -Q)
   CIDv0to1=$(echo "$CIDv0" | ipfs cid base32)
+  echo CIDv0to1=${CIDv0to1}
 '
 
 test_expect_success "Add the test directory" '
@@ -120,8 +121,10 @@ test_expect_success "Publish test text file to IPNS using RSA keys" '
 '
 
 test_expect_success "Publish test text file to IPNS using ED25519 keys" '
-  PEERID=$(ipfs key gen --type=ed25519 test_key_ed25519 | head -n1 | tr -d "\n")
-  IPNS_IDv1=$(echo "$PEERID" | ipfs cid format -v 1 --codec libp2p-key -b base32)
+  # PEERID is base58 multi-hash, not CIDv1, breaks "ipfs cid"
+  PEERID=$(ipfs key gen --type=ed25519 test_key_ed25519 | head -n1 | tr -d "\n") &&
+  # IPNS_IDv0=???
+  # IPNS_IDv1=???
   test_check_peerid "${PEERID}" &&
   ipfs name publish --key test_key_ed25519 --allow-offline -Q "/ipfs/$CIDv1" > name_publish_out &&
   ipfs name resolve "$PEERID"  > output &&

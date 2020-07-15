@@ -51,3 +51,7 @@ func (p2p *P2P) CheckProtoExists(proto string) bool {
 	}
 	return false
 }
+
+func (p2p *P2P) GetPeerHost() p2phost.Host {
+	return p2p.peerHost
+}

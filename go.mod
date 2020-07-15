@@ -113,4 +113,6 @@ require (
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
 
+replace github.com/ipfs/go-ipfs/core => github.com/suutaku/go-ipfs/core master
+
 go 1.13
